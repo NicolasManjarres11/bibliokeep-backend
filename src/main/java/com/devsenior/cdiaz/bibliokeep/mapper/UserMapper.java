@@ -37,6 +37,6 @@ public interface UserMapper {
                 role.setName(roleName);
                 return role;
             })
-            .collect(Collectors.toList());
+            .toList();
     }
 }

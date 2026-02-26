@@ -66,8 +66,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .toList();
 
         var principal = new JwtUser(subject, userId, authorities);
-        var auth = new UsernamePasswordAuthenticationToken(principal, token, authorities);
-
-        return auth;
+        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 }

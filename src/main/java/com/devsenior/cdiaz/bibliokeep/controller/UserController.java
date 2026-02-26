@@ -48,19 +48,6 @@ public class UserController {
         return userService.getAllUsers();
     }
 
-    // DEMO Prueba de Preauthorize
-    // @GetMapping("/{userId}")
-    // @PreAuthorize("principal.userId.equalsIgnoreCase(#userId)")
-    // // @PreAuthorize("principal.userId != null")
-    // // @PreAuthorize("#userId != null")
-    // public String get(
-    //         @PathVariable("userId") String userId,
-    //         @AuthenticationPrincipal JwtUser user) {
-    //     log.info("path userId = {}", userId);
-    //     log.info("jwt userId  = {}", user.getUserId());
-    //     return "ok";
-    // }
-
     @PreAuthorize("hasRole('ADMIN') or principal.userId == '#id'")
     @PutMapping("/{id}")
     public UserResponseDTO updateUser(

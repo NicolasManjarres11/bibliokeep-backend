@@ -29,7 +29,7 @@ public class Book {
 
     @Column(nullable = false, unique = true, length = 13)
     @NotBlank(message = "El ISBN es obligatorio")
-    @Pattern(regexp = "^\\d{10}|\\d{13}$", message = "El ISBN debe tener 10 o 13 dígitos")
+    @Pattern(regexp = "^(\\d{10}|\\d{13})$", message = "El ISBN debe tener 10 o 13 dígitos")
     private String isbn;
 
     @Column(nullable = false)

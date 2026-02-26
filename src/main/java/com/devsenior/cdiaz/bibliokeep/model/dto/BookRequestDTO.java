@@ -10,7 +10,7 @@ public record BookRequestDTO(
         UUID ownerId,
         
         @NotBlank(message = "El ISBN es obligatorio")
-        @Pattern(regexp = "^\\d{10}|\\d{13}$", message = "El ISBN debe tener 10 o 13 dígitos")
+        @Pattern(regexp = "^(\\d{10}|\\d{13})$", message = "El ISBN debe tener 10 o 13 dígitos")
         String isbn,
         
         @NotBlank(message = "El título es obligatorio")
