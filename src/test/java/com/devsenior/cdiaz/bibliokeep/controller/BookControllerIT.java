@@ -3,37 +3,33 @@ package com.devsenior.cdiaz.bibliokeep.controller;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
+import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.client.RestTestClient;
+import org.springframework.web.context.WebApplicationContext;
 
 import com.devsenior.cdiaz.bibliokeep.model.dto.BookRequestDTO;
 import com.devsenior.cdiaz.bibliokeep.model.dto.BookResponseDTO;
 import com.devsenior.cdiaz.bibliokeep.model.entity.BookStatus;
-import com.devsenior.cdiaz.bibliokeep.model.vo.JwtUser;
+import com.devsenior.cdiaz.bibliokeep.service.JwtService;
 
-import tools.jackson.databind.ObjectMapper;
-
-@AutoConfigureMockMvc
 @SpringBootTest
 public class BookControllerIT {
 
     @Autowired
-    private MockMvc mockMvc;
+    private JwtService jwtService;
 
-    @Autowired
-    private ObjectMapper mapper;
+    private RestTestClient restTestClient;
+
+    @BeforeEach
+    public void init(WebApplicationContext context) {
+        restTestClient = RestTestClient.bindToApplicationContext(context)
+                .build();
+    }
 
     @Test
     public void createBookWithoutAuth() throws Exception {
@@ -48,14 +44,20 @@ public class BookControllerIT {
                 1,
                 null);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/books")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(request)))
-                .andExpect(MockMvcResultMatchers.status().isForbidden());
+        restTestClient.post()
+                .uri("/api/books")
+                .body(request)
+                .exchange()
+                .expectStatus().isForbidden();
     }
 
     @Test
     public void createBookAsAdmin() throws Exception {
+        var claims = Map.<String, Object>of(
+            "roles", List.of("ROLE_ADMIN"),
+            "user-id", "e7b1c9d2-3f4a-4b6c-9d8e-0a1b2c3d4e5f"
+        );
+        var token = jwtService.generateToken(claims, "cdiaz@test.com", 60000);
         var request = new BookRequestDTO(
                 null,
                 "1234567890",
@@ -67,32 +69,17 @@ public class BookControllerIT {
                 1,
                 null);
 
-        var result = mockMvc.perform(MockMvcRequestBuilders.post("/api/books")
-                .with(SecurityMockMvcRequestPostProcessors.authentication(getAuthenticationAdmin()))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(request)))
-                .andExpect(MockMvcResultMatchers.status().isCreated())
-                .andReturn();
-        var response = mapper.readValue(result.getResponse().getContentAsString(), BookResponseDTO.class);
+        var response = restTestClient.post()
+                .uri("/api/books")
+                .header("Authorization", String.format("Bearer %s", token))
+                .body(request)
+                .exchange()
+                .expectStatus().isForbidden()
+                .returnResult(BookResponseDTO.class)
+                .getResponseBody();
 
         assertNotNull(response);
         assertNotNull(response.id());
     }
 
-    private Authentication getAuthenticationAdmin() {
-        SecurityContextHolder.clearContext();
-
-        var subject = "cdiaz@example.com";
-        var userId = "e7b1c9d2-3f4a-4b6c-9d8e-0a1b2c3d4e5f";
-        var roles = List.of("ROLE_ADMIN");
-
-        var authorities = roles.stream()
-                .map(SimpleGrantedAuthority::new)
-                .toList();
-
-        var principal = new JwtUser(subject, userId, authorities);
-        var auth = new UsernamePasswordAuthenticationToken(principal, "", authorities);
-
-        return auth;
-    }
 }

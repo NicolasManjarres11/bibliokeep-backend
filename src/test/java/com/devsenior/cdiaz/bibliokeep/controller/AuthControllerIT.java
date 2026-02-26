@@ -2,34 +2,29 @@ package com.devsenior.cdiaz.bibliokeep.controller;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.client.RestTestClient;
+import org.springframework.web.context.WebApplicationContext;
 
 import com.devsenior.cdiaz.bibliokeep.model.dto.LoginRequestDTO;
 import com.devsenior.cdiaz.bibliokeep.model.dto.LoginResponseDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import tools.jackson.databind.ObjectMapper;
-
-// @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc
+@SpringBootTest
 public class AuthControllerIT {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private RestTestClient restTestClient;
 
-    @Autowired
-    private ObjectMapper mapper;
+    @BeforeEach
+    public void init(WebApplicationContext context) {
+        restTestClient = RestTestClient.bindToApplicationContext(context)
+                .build();
+    }
 
-//     @Test
+    @Test
     @DisplayName("Inicio de sesion con usuario y contrasena validos")
     public void loginSuccessMockMvc() throws JsonProcessingException, Exception {
         // Arrange
@@ -38,43 +33,46 @@ public class AuthControllerIT {
                 "cdiaz123");
 
         // Act
-        var result = mockMvc.perform(MockMvcRequestBuilders.post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(request)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-        var response = mapper.readValue(result.getResponse().getContentAsString(),
-                LoginResponseDTO.class);
+        var result = restTestClient.post()
+                .uri("/auth/login")
+                .body(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(LoginResponseDTO.class)
+                .returnResult()
+                .getResponseBody();
 
         // Assert
-        assertNotNull(response);
-        assertNotNull(response.accessToken());
+        assertNotNull(result);
+        assertNotNull(result.accessToken());
     }
 
-//     @Test
+    @Test
     @DisplayName("Inicio de sesion falla con usuario no existente")
     public void loginFailsWithNonExistentUser() throws Exception {
         // Arrange
         var request = new LoginRequestDTO("nonexistent@test.com", "password123");
 
         // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(request)))
-                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+        restTestClient.post()
+                .uri("/auth/login")
+                .body(request)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
-//     @Test
+    @Test
     @DisplayName("Inicio de sesion falla con campos vacios")
     public void loginFailsWithEmptyFields() throws Exception {
         // Arrange
         var request = new LoginRequestDTO("", "");
 
         // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(request)))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+        restTestClient.post()
+                .uri("/auth/login")
+                .body(request)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
 }
