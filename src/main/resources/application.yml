@@ -20,3 +20,10 @@ jwt:
   secret: my-secret-key-for-jwt-token-generation-and-validation-12345
   expiration: 86400000
 
+
+app:
+  upload:
+    directory: ./uploads
+    path-pattern: /content
+    cache-period: 3600
+
