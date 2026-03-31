@@ -2,9 +2,9 @@ spring:
   application:
     name: bibliokeep-backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/bibliokeep
-    username: postgres
-    password: admin123
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bibliokeep}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:admin123}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -14,16 +14,19 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
-jwt:
-  secret: my-secret-key-for-jwt-token-generation-and-validation-12345
-  expiration: 86400000
+
 
 
 app:
+  jwt:
+    secret: ${APP_JWT_SECRET:my-secret-key-for-jwt-token-generation-and-validation-12345}
+    expiration: ${APP_JWT_EXPIRATION:86400000}
   upload:
-    directory: ./uploads
+    directory: ${APP_UPLOAD_DIRECTORY:./uploads}
     path-pattern: /content
-    cache-period: 3600
+    cache-period: ${APP_UPLOAD_CACHE:3600}
+  cors:
+    allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:4200}
 

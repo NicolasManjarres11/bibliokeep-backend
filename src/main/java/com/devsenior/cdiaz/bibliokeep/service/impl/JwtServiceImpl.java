@@ -26,10 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class JwtServiceImpl implements JwtService {
 
-    @Value("${jwt.secret}")
+    @Value("${app.jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
+    @Value("${app.jwt.expiration}")
     private long expirationTime;
 
     /**
