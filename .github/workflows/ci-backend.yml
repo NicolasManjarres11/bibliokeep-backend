@@ -14,11 +14,14 @@ jobs:
             - uses: actions/checkout@v4
 
             - name: "Configurar JDK 21"
-              uses: action/setup-java@v4
+              uses: actions/setup-java@v4
               with:
                 java-version: '21'
                 distribution: 'temurin'
                 cache: 'gradle'
+
+            - name: "Dar permisos de ejecucion al gradlew"
+              run: chmod +x ./gradlew
 
             - name: "Gradle Build"
               run: ./gradlew build
