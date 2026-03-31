@@ -1,4 +1,4 @@
-name: "Backend CI: Spring boot & Java 25"
+name: "Backend CI: Spring boot & Java 21"
 
 on:  
     push:
