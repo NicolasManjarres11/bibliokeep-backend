@@ -25,3 +25,42 @@ jobs:
 
             - name: "Gradle Build"
               run: ./gradlew build --no-daemon -x test
+
+            - name: "Obtener la versión del proyecto"
+              id: get_version
+              run: echo "VERSION=$(./gradlew properties | grep ^'version:' | awk '{print2}')" >> $GITHUB_OUTPUT
+            
+            - name: "Guardar el JAR"
+              uses: actions/upload-artifact@v4
+              with:
+                name: backend-binary
+                path: build/libs/*.jar
+
+    publish-release:
+      needs: build_and_test
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write
+      
+      steps:
+        - uses: actions/checkout@v6
+        
+        - name: "Descargar el JAR"
+          uses: actions/download-artifact@v6
+          with:
+            name: backend-binary
+            path: ./release-assets
+        
+        - name: "Crear el release de GitHub"
+          uses: softprops/action-gh-release@v2
+          with:
+            tag_name: v${{needs.build-and-test.outputs.version }}-${{github.run_number}}
+            name: Releasev ${{needs.build-and-test.outputs.version }}
+            files: ./release-assets/*.jar
+            body: |
+              ## Automated Release
+              - Commit: ${{ github.sha }}
+              - Status: Verified by CI
+              - Environment: Java 21 / Spring Boot
+
+
