@@ -57,8 +57,8 @@ jobs:
         - name: "Crear el release de GitHub"
           uses: softprops/action-gh-release@v2
           with:
-            tag_name: v${{needs.build-and-test.outputs.version }}-${{github.run_number}}
-            name: Releasev ${{needs.build-and-test.outputs.version }}
+            tag_name: v${{needs.build_and_test.outputs.version }}-${{github.run_number}}
+            name: Releasev ${{needs.build_and_test.outputs.version }}
             files: ./release-assets/*.jar
             body: |
               ## Automated Release
