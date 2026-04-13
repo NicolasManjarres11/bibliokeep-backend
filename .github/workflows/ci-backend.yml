@@ -65,5 +65,25 @@ jobs:
               - Commit: ${{ github.sha }}
               - Status: Verified by CI
               - Environment: Java 21 / Spring Boot
+    docker-build-and-push:
+        needs: build_and_test
+        runs-on: ubuntu-latest
+
+        steps:
+          - uses: actions/checkout@v6
+          - name: Log in to Docker Hub
+            uses: docker/login-action@v4
+            with:
+              username: ${{vars.DOCKERHUB_USERNAME}}
+              password: ${{secrets.DOCKERHUB_PASSWORD}}
+          
+          - name: Build and Push Docker Image
+            uses: docker/build-push-action@v7
+            with:
+              context: .
+              push: true
+              tags: 
+                ${{vars.DOCKERHUB_USERNAME}}/bibliokeep-backend:${{needs.build_and_test.outputs.version }}
+                ${{vars.DOCKERHUB_USERNAME}}/bibliokeep-backend:latest
 
 
