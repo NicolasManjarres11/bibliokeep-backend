@@ -20,7 +20,7 @@ COPY src/ src/
 RUN ./gradlew clean bootJar -x test --no-daemon
 
 # Extaer las capas (layers) del JAR usando layertools
-ARG JAR_FILE=build/libs/*.jar
+ARG JAR_FILE=./build/libs/*.jar
 
 # RUN lstat build/libs/
 
