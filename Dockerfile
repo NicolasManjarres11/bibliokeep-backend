@@ -20,11 +20,16 @@ COPY src/ src/
 RUN ./gradlew clean bootJar -x test --no-daemon
 
 # Extaer las capas (layers) del JAR usando layertools
-ARG JAR_FILE=/build/libs/*.jar
+#ARG JAR_FILE=./build/libs/*.jar
 
 # RUN lstat build/libs/
 
-COPY ${JAR_FILE} application.jar
+#COPY ${JAR_FILE} application.jar
+#RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
+
+# Extraer las capas (layers) del JAR usando layertools.
+# El bootJar queda en la imagen (build/libs), no en el build context: COPY no sirve aquí.
+RUN cp "$(ls build/libs/*.jar | grep -v -- '-plain.jar' | head -n1)" application.jar
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 # -- Stage 2 - Runner
