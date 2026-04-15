@@ -1,20 +1,34 @@
 package com.devsenior.cdiaz.bibliokeep.config;
 
+import java.io.IOException;
 import java.net.URI;
 
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.devsenior.cdiaz.bibliokeep.exception.InvalidCredentialsException;
 import com.devsenior.cdiaz.bibliokeep.exception.NotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private final ObjectMapper objectMapper;
+
+    public GlobalExceptionHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> handleMethodArgumentNotValid(
@@ -74,14 +88,55 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
 
+    @ExceptionHandler(HttpMessageNotWritableException.class)
+    public void handleMessageNotWritable(HttpMessageNotWritableException ex, HttpServletResponse response) {
+        if (response.isCommitted() || isClosedOrClientDisconnect(ex)) {
+            log.debug("Respuesta no escribible (cliente desconectado o stream cerrado): {}", ex.getMessage());
+            return;
+        }
+        log.warn("No se pudo escribir el cuerpo HTTP: {}", ex.getMessage());
+    }
+
+    @ExceptionHandler(ClientAbortException.class)
+    public void handleClientAbort(ClientAbortException ex) {
+        log.debug("Cliente cerró la conexión: {}", ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ProblemDetail> handleGenericException(Exception ex) {
+    public void handleGenericException(Exception ex, HttpServletResponse response) throws IOException {
+        if (response.isCommitted() || isClosedOrClientDisconnect(ex)) {
+            log.debug("Error omitido tras respuesta enviada o cliente desconectado: {}", ex.getMessage());
+            return;
+        }
+        log.error("Error interno no manejado", ex);
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Error interno del servidor");
         problem.setType(URI.create("https://api.bibliokeep.com/errors/internal-error"));
         problem.setTitle("Error interno");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        objectMapper.writeValue(response.getOutputStream(), problem);
+    }
+
+    private static boolean isClosedOrClientDisconnect(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause()) {
+            if (t instanceof ClientAbortException) {
+                return true;
+            }
+            if (t instanceof IOException e) {
+                String m = e.getMessage();
+                if (m != null) {
+                    String lower = m.toLowerCase();
+                    if (lower.contains("broken pipe")
+                            || lower.contains("connection reset")
+                            || lower.contains("may not be written to once it has been closed")) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 }
