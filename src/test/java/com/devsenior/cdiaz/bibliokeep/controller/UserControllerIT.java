@@ -37,7 +37,7 @@ public class UserControllerIT {
             "user-id", "e7b1c9d2-3f4a-4b6c-9d8e-0a1b2c3d4e5f"
         );
         var token = jwtService.generateToken(claims, "cdiaz@test.com", 60000);
-        var request = new UserRequestDTO("cdiaz@test.org", "cdiaz123", Set.of(), 1, List.of("USER"));
+        var request = new UserRequestDTO("cesar","cdiaz@test.org", "cdiaz123", Set.of(), 1, List.of("USER"));
 
         restTestClient.post()
             .uri("/api/users")

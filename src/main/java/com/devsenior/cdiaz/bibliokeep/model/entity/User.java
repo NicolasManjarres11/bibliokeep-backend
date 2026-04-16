@@ -39,6 +39,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false)
+    private String name;
+
+
     @Column(nullable = false, unique = true)
     @NotBlank(message = "El email es obligatorio")
     @Email(message = "El email debe tener un formato válido")
